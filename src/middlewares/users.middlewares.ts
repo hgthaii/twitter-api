@@ -1,4 +1,6 @@
 import { checkSchema } from 'express-validator'
+import { USERS_MESSAGES } from '~/constants/messages'
+import { ErrorWithStatus } from '~/models/Errors'
 import usersService from '~/services/users.services'
 import validation from '~/utils/validation'
 
@@ -6,23 +8,23 @@ const registerValidator = validation.validate(
   checkSchema({
     name: {
       notEmpty: {
-        errorMessage: 'Tên không được để trống!'
+        errorMessage: USERS_MESSAGES.NAME_IS_REQUIRED
       },
       isString: {
-        errorMessage: 'Tên phải là một chuỗi ký tự!'
+        errorMessage: USERS_MESSAGES.NAME_MUST_BE_STRING
       },
       isLength: {
         options: {
           min: 1,
           max: 120
         },
-        errorMessage: 'Tên phải có độ dài từ 1 đến 120 ký tự!'
+        errorMessage: USERS_MESSAGES.NAME_LENGTH_MUST_BE_BETWEEN_1_AND_120
       },
       trim: true
     },
     email: {
       notEmpty: {
-        errorMessage: 'Email không được để trống!'
+        errorMessage: USERS_MESSAGES.EMAIL_IS_REQUIRED
       },
       isEmail: true,
       trim: true,
@@ -30,27 +32,27 @@ const registerValidator = validation.validate(
         options: async (value) => {
           const isExistEmail = await usersService.checkEmailExists(value)
           if (isExistEmail) {
-            throw new Error('Email này đã được sử dụng!')
+            throw new Error(USERS_MESSAGES.EMAIL_ALREADY_EXISTS)
           }
 
           return true
         }
       },
-      errorMessage: 'Email không đúng định dạng! Ví dụ: example@gmail.com'
+      errorMessage: USERS_MESSAGES.EMAIL_INVALID
     },
     password: {
       notEmpty: {
-        errorMessage: 'Mật khẩu không được để trống!'
+        errorMessage: USERS_MESSAGES.PASSWORD_IS_REQUIRED
       },
       isString: {
-        errorMessage: 'Mật khẩu phải là một chuỗi ký tự!'
+        errorMessage: USERS_MESSAGES.PASSWORD_MUST_BE_STRING
       },
       isLength: {
         options: {
           min: 6,
           max: 50
         },
-        errorMessage: 'Mật khẩu phải có độ dài từ 6 đến 50 ký tự!'
+        errorMessage: USERS_MESSAGES.PASSWORD_LENGTH_MUST_BE_BETWEEN_6_AND_50
       },
       isStrongPassword: {
         options: {
@@ -60,20 +62,20 @@ const registerValidator = validation.validate(
           minNumbers: 1,
           minSymbols: 1
         },
-        errorMessage: 'Mật khẩu phải chứa chữ hoa, chữ thường, số và ký tự.'
+        errorMessage: USERS_MESSAGES.PASSWORD_IS_NOT_STRONG
       }
     },
     confirm_password: {
       notEmpty: {
-        errorMessage: 'Xác nhận mật khẩu không được để trống!'
+        errorMessage: USERS_MESSAGES.CONFIRM_PASSWORD_IS_REQUIRED
       },
       isString: {
-        errorMessage: 'Xác nhận mật khẩu phải là một chuỗi ký tự!'
+        errorMessage: USERS_MESSAGES.PASSWORD_MUST_BE_STRING
       },
       custom: {
         options: (value, { req }) => {
           if (value !== req.body.password) {
-            throw new Error('Xác nhận mật khẩu chưa trùng khớp với mật khẩu đã nhập!')
+            throw new Error(USERS_MESSAGES.PASSWORDS_DO_NOT_MATCH)
           }
           return true
         }
@@ -84,7 +86,8 @@ const registerValidator = validation.validate(
         options: {
           strict: true,
           strictSeparator: true
-        }
+        },
+        errorMessage: USERS_MESSAGES.DATE_OF_BIRTH_IS_REQUIRED
       }
     }
   })
