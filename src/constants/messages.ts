@@ -14,7 +14,16 @@ const USERS_MESSAGES = {
   EMAIL_IS_REQUIRED: 'Email không được để trống!',
   NAME_IS_REQUIRED: 'Tên không được để trống!',
   USER_NOT_FOUND: 'Không tìm thấy người dùng!',
-  DATE_OF_BIRTH_IS_REQUIRED: 'Ngày sinh không được để trống!'
+  DATE_OF_BIRTH_IS_REQUIRED: 'Ngày sinh không được để trống!',
+  EMAIL_NOT_REGISTERED: 'Email này chưa được đăng ký!',
+  LOGIN_SUCCESS: 'Đăng nhập thành công!',
+  INTERNAL_SERVER_ERROR: 'Lỗi máy chủ nội bộ!',
+  LOGOUT_SUCCESS: 'Đăng xuất thành công!',
+  ACCESS_TOKEN_IS_REQUIRED: 'Access token không được để trống!',
+  ACCESS_TOKEN_IS_INVALID: 'Access token không hợp lệ!',
+  REFRESH_TOKEN_IS_REQUIRED: 'Refresh token không được để trống!',
+  REFRESH_TOKEN_IS_INVALID: 'Refresh token không hợp lệ!',
+  REFRESH_TOKEN_DOES_NOT_EXIST_IN_DATABASE: 'Refresh token không tồn tại trong cơ sở dữ liệu!'
 } as const
 
 export { USERS_MESSAGES }

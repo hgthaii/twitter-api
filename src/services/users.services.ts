@@ -1,15 +1,20 @@
+import { ObjectId } from 'mongodb'
 import { TokenType } from '~/constants/enums'
 import { RegisterReqBody } from '~/models/requests/User.requests'
+import RefreshToken from '~/models/schemas/RefreshToken.schema'
 import User from '~/models/schemas/User.schema'
 import databaseService from '~/services/database.services'
 import { hashPassword } from '~/utils/crypto'
 import { signToken } from '~/utils/jwt'
+import dotenv from 'dotenv'
+import { USERS_MESSAGES } from '~/constants/messages'
+dotenv.config()
 
 class UsersService {
-  private signAccessToken(userId: string) {
+  private signAccessToken(user_id: string) {
     return signToken({
       payload: {
-        userId,
+        user_id,
         token_type: TokenType.AccessToken
       },
       options: {
@@ -17,10 +22,11 @@ class UsersService {
       }
     })
   }
-  private signRefreshToken(userId: string) {
+
+  private signRefreshToken(user_id: string) {
     return signToken({
       payload: {
-        userId,
+        user_id,
         token_type: TokenType.RefreshToken
       },
       options: {
@@ -28,6 +34,26 @@ class UsersService {
       }
     })
   }
+
+  private signAceessAndRefreshToken(user_id: string) {
+    return Promise.all([this.signAccessToken(user_id), this.signRefreshToken(user_id)])
+  }
+
+  async login(user_id: string) {
+    const [access_token, refresh_token] = await this.signAceessAndRefreshToken(user_id)
+
+    await databaseService.rftk.insertOne(
+      new RefreshToken({
+        user_id: new ObjectId(user_id),
+        token: refresh_token as string
+      })
+    )
+    return {
+      access_token,
+      refresh_token
+    }
+  }
+
   async register(payload: RegisterReqBody) {
     const result = await databaseService.users.insertOne(
       new User({
@@ -36,12 +62,15 @@ class UsersService {
         date_of_birth: new Date(payload.date_of_birth)
       })
     )
-    const userId = result.insertedId.toString()
-    const [access_token, refresh_token] = await Promise.all([
-      this.signAccessToken(userId),
-      this.signRefreshToken(userId)
-    ])
+    const user_id = result.insertedId.toString()
+    const [access_token, refresh_token] = await this.signAceessAndRefreshToken(user_id)
 
+    await databaseService.rftk.insertOne(
+      new RefreshToken({
+        user_id: new ObjectId(user_id),
+        token: refresh_token as string
+      })
+    )
     return {
       access_token,
       refresh_token
@@ -52,6 +81,13 @@ class UsersService {
     const result = await databaseService.users.findOne({ email })
 
     return Boolean(result)
+  }
+
+  async logout(refresh_token: string) {
+    await databaseService.rftk.deleteOne({ token: refresh_token })
+    return {
+      message: USERS_MESSAGES.LOGOUT_SUCCESS
+    }
   }
 }
 
