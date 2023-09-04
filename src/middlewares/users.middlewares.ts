@@ -164,20 +164,30 @@ const accessTokenValidator = validation.validate(
   checkSchema(
     {
       authorization: {
-        notEmpty: {
-          errorMessage: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED
-        },
         custom: {
           options: async (value: string, { req }) => {
-            const accessToken = value.split(' ')[1]
+            const accessToken = (value || '').split(' ')[1]
             if (!accessToken) {
               throw new ErrorWithStatus({
                 message: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED,
                 statusCode: HTTP_STATUS.UNAUTHORIZED
               })
             }
+
             try {
-              const decoded_authorization = await verifyToken({ token: accessToken })
+              const decoded_authorization = await verifyToken({
+                token: accessToken,
+                secretOrPublicKey: process.env.JWT_KEY_ACTK_SECRET as string
+              })
+              const dateObject = new Date()
+              const timestamp = Math.floor(dateObject.getTime() / 1000)
+              const expiresIn = Number(decoded_authorization.exp) - timestamp
+              if (expiresIn <= 0) {
+                throw new ErrorWithStatus({
+                  message: USERS_MESSAGES.ACCESS_TOKEN_IS_EXPIRED,
+                  statusCode: HTTP_STATUS.UNAUTHORIZED
+                })
+              }
               ;(req as Request).decoded_authorization = decoded_authorization
             } catch (error) {
               throw new ErrorWithStatus({
@@ -199,20 +209,34 @@ const refreshTokenValidator = validation.validate(
   checkSchema(
     {
       refresh_token: {
-        notEmpty: {
-          errorMessage: USERS_MESSAGES.REFRESH_TOKEN_IS_REQUIRED
-        },
+        trim: true,
         custom: {
           options: async (value: string, { req }) => {
+            if (!value) {
+              throw new ErrorWithStatus({
+                message: USERS_MESSAGES.REFRESH_TOKEN_IS_REQUIRED,
+                statusCode: HTTP_STATUS.UNAUTHORIZED
+              })
+            }
             try {
               const [decoded_refresh_token, refresh_token] = await Promise.all([
-                verifyToken({ token: value }),
+                verifyToken({ token: value, secretOrPublicKey: process.env.JWT_KEY_RFTK_SECRET as string }),
                 databaseService.rftk.findOne({ token: value })
               ])
 
               if (!refresh_token) {
                 throw new ErrorWithStatus({
                   message: USERS_MESSAGES.REFRESH_TOKEN_DOES_NOT_EXIST_IN_DATABASE,
+                  statusCode: HTTP_STATUS.UNAUTHORIZED
+                })
+              }
+
+              const dateObject = new Date()
+              const timestamp = Math.floor(dateObject.getTime() / 1000)
+              const expiresIn = Number(decoded_refresh_token.exp) - timestamp
+              if (expiresIn <= 0) {
+                throw new ErrorWithStatus({
+                  message: USERS_MESSAGES.REFRESH_TOKEN_IS_EXPIRED,
                   statusCode: HTTP_STATUS.UNAUTHORIZED
                 })
               }
@@ -235,4 +259,64 @@ const refreshTokenValidator = validation.validate(
   )
 )
 
-export default { registerValidator, loginValidator, accessTokenValidator, refreshTokenValidator }
+const emailVerifyTokenValidator = validation.validate(
+  checkSchema(
+    {
+      email_verify_token: {
+        trim: true,
+        custom: {
+          options: async (value: string, { req }) => {
+            if (!value) {
+              throw new ErrorWithStatus({
+                message: USERS_MESSAGES.EMAIL_VERIFY_TOKEN_IS_REQUIRED,
+                statusCode: HTTP_STATUS.UNAUTHORIZED
+              })
+            }
+            try {
+              const [decoded_refresh_token, refresh_token] = await Promise.all([
+                verifyToken({ token: value, secretOrPublicKey: process.env.JWT_KEY_EMAIL_VERIFY_SECRET as string }),
+                databaseService.rftk.findOne({ token: value })
+              ])
+
+              if (!refresh_token) {
+                throw new ErrorWithStatus({
+                  message: USERS_MESSAGES.REFRESH_TOKEN_DOES_NOT_EXIST_IN_DATABASE,
+                  statusCode: HTTP_STATUS.UNAUTHORIZED
+                })
+              }
+
+              const dateObject = new Date()
+              const timestamp = Math.floor(dateObject.getTime() / 1000)
+              const expiresIn = Number(decoded_refresh_token.exp) - timestamp
+              if (expiresIn <= 0) {
+                throw new ErrorWithStatus({
+                  message: USERS_MESSAGES.REFRESH_TOKEN_IS_EXPIRED,
+                  statusCode: HTTP_STATUS.UNAUTHORIZED
+                })
+              }
+              ;(req as Request).decoded_refresh_token = decoded_refresh_token
+            } catch (error) {
+              if (error instanceof JsonWebTokenError) {
+                throw new ErrorWithStatus({
+                  message: USERS_MESSAGES.REFRESH_TOKEN_IS_INVALID,
+                  statusCode: HTTP_STATUS.UNAUTHORIZED
+                })
+              }
+              throw error
+            }
+            return true
+          }
+        }
+      }
+    },
+    ['body']
+  )
+)
+
+export default {
+  registerValidator,
+  loginValidator,
+  accessTokenValidator,
+  refreshTokenValidator,
+  emailVerifyTokenValidator
+}

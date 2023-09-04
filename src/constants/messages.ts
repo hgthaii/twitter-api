@@ -23,7 +23,10 @@ const USERS_MESSAGES = {
   ACCESS_TOKEN_IS_INVALID: 'Access token không hợp lệ!',
   REFRESH_TOKEN_IS_REQUIRED: 'Refresh token không được để trống!',
   REFRESH_TOKEN_IS_INVALID: 'Refresh token không hợp lệ!',
-  REFRESH_TOKEN_DOES_NOT_EXIST_IN_DATABASE: 'Refresh token không tồn tại trong cơ sở dữ liệu!'
+  REFRESH_TOKEN_DOES_NOT_EXIST_IN_DATABASE: 'Refresh token không tồn tại trong cơ sở dữ liệu!',
+  ACCESS_TOKEN_IS_EXPIRED: 'Access token đã hết hạn!',
+  REFRESH_TOKEN_IS_EXPIRED: 'Refresh token đã hết hạn!',
+  EMAIL_VERIFY_TOKEN_IS_REQUIRED: 'Email verify token không được để trống!'
 } as const
 
 export { USERS_MESSAGES }

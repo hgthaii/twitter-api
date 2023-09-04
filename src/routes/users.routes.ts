@@ -35,4 +35,17 @@ router.post(
   wrapRequestHandler(usersControllers.logout)
 )
 
+/**
+ * Mô tả: Xác thực email khi người dùng click vào link
+ * Path: /api/v1/users/verify_email
+ * Method: POST
+ * Body: { email_verify_token: string }
+ */
+router.post(
+  '/verify_email',
+  usersMiddlewares.accessTokenValidator,
+  usersMiddlewares.refreshTokenValidator
+  // wrapRequestHandler(usersControllers.verify_email)
+)
+
 export default router
